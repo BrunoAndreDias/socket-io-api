@@ -1,16 +1,17 @@
-import 'dotenv/config';
 import express from 'express';
-import cors from 'cors';
+import http from 'http';
+import axios from 'axios';
+import socketIo from 'socket.io';
 import mongoose from 'mongoose';
-import { initialize } from './routes';
+import todoModel from './models/todo';
+
+require('dotenv').config();
+
+const port = process.env.PORT || 4001;
 
 const app = express();
+const server = http.createServer(app);
 
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Connection with the Mongo
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useCreateIndex: true,
@@ -18,7 +19,53 @@ mongoose.connect(process.env.MONGODB_URI, {
   useFindAndModify: false,
 });
 
-// Initialization of all routes of the system
-app.use(initialize());
+const io = socketIo(server);
 
-app.listen(process.env.PORT, () => console.log(`Code challenge app listening on port ${process.env.PORT}!`));
+// communication to the DarkSkyApi
+const getApiAndEmit = async (socket, { lat, long }) => {
+  try {
+    const res = await axios.get(
+      `${process.env.DARKSKY_API}${lat},${long}`,
+    );
+
+    socket.emit('FromAPI', res.data);
+  } catch (error) {
+    console.error(`Error: ${error}`);
+  }
+};
+
+// socket connection
+let interval;
+io.on('connection', async (socket) => {
+  console.log('Client connected.');
+
+  if (interval) {
+    clearInterval(interval);
+  }
+
+  // initial connection need to send data for client
+  const todos = await todoModel.find();
+  socket.emit('all-todo', todos);
+
+  socket.on('location', (data) => {
+    interval = setInterval(() => getApiAndEmit(socket, data), 10000);
+  });
+
+  socket.on('create-Todo', async (todo) => {
+    await todoModel.create(todo);
+    const allTodos = await todoModel.find();
+    socket.emit('all-todo', allTodos);
+  });
+
+  socket.on('delete-todo', async (todo) => {
+    await todoModel.remove(todo);
+    const allTodos = await todoModel.find();
+    socket.emit('all-todo', allTodos);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
+  });
+});
+
+server.listen(port, () => console.log(`Listening on port ${port}`));
