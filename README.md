@@ -1,4 +1,4 @@
-# skeeled-challenge-api
+# socket-io-api
 
 This api need a ".env" file with:
 ```
