@@ -4,7 +4,7 @@ This api need a ".env" file with:
 ```
 PORT=4001
 DARKSKY_API=https://api.darksky.net/forecast/API_KEY/
-MONGODB_URI='mongodb://localhost:27017/skeeled'
+MONGODB_URI='mongodb://localhost:27017/namesomething'
 ```
 
 ## App description
