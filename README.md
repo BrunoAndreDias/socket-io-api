@@ -7,6 +7,13 @@ DARKSKY_API=https://api.darksky.net/forecast/API_KEY/
 MONGODB_URI='mongodb://localhost:27017/namesomething'
 ```
 
+To run it locally:
+
+```
+npm install
+npm start
+```
+
 ## App description
 
 I used the darksky api to get the weather from the location provided from the frontend. To use the darksky it is needed one API_KEY that provide us 1000 free request's to the darksky api.
